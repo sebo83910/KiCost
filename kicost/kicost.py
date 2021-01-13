@@ -43,6 +43,8 @@ from __future__ import print_function
 import sys, os
 import pprint
 import tqdm
+import json
+import copy
 
 # Stops UnicodeDecodeError exceptions.
 try:
@@ -77,7 +79,7 @@ def kicost(in_file, eda_name, out_filename,
         user_fields, ignore_fields, group_fields, translate_fields,
         variant,
         dist_list=list(distributor_dict.keys()),
-        collapse_refs=True, suppress_cat_url=True, currency=DEFAULT_CURRENCY):
+        collapse_refs=True, suppress_cat_url=True, currency=DEFAULT_CURRENCY,export_json=False):
     ''' @brief Run KiCost.
     
     Take a schematic input file and create an output file with a cost spreadsheet in xlsx format.
@@ -254,6 +256,48 @@ def kicost(in_file, eda_name, out_filename,
     create_spreadsheet(parts, prj_info, out_filename, currency, collapse_refs, suppress_cat_url,
                       user_fields, '-'.join(variant) if len(variant)>1 else variant[0])
 
+    web_dists = sorted([d for d in distributor_dict if distributor_dict[d]['type'] != 'local'])
+    local_dists = sorted([d for d in distributor_dict if distributor_dict[d]['type'] == 'local'])
+    dist_list = web_dists + local_dists
+
+    #This section exports some of the parts elements into a JSON file.
+    if export_json:
+        elements = {'url': {}, 'datasheet': {}, 'currency': {}, 'qty': {}, 'part_num': {}, 'moq': {}, 'price_tiers': {}, 'qty_increment': {}}
+        dists_list = {
+            'digikey': elements.copy(),
+            'farnell': elements.copy(),
+            'mouser': elements.copy(),
+            'rs': elements.copy()
+        }
+
+        # 
+        dico = dict()
+    
+        for part in parts:
+            #Gather information under each part available:
+            dico[part.fields.get('manf#')]= copy.deepcopy(dists_list)
+            for dist_s in dists_list.keys():
+                if dist_s in dist_list:
+                    print ("exist: ", dist_s)
+                    dico[part.fields.get('manf#')][dist_s]['url'] = part.url[dist_s]
+                    dico[part.fields.get('manf#')][dist_s]['part_num'] = part.part_num[dist_s]
+                    dico[part.fields.get('manf#')][dist_s]['moq'] = part.moq[dist_s]
+                    dico[part.fields.get('manf#')][dist_s]['currency'] = part.currency[dist_s]
+                    dico[part.fields.get('manf#')][dist_s]['price_tiers'] = part.price_tiers[dist_s]
+                    if part.qty_increment[dist_s] == float("inf"):
+                        dico[part.fields.get('manf#')][dist_s]['qty_increment'] = "null"
+                    else:
+                        dico[part.fields.get('manf#')][dist_s]['qty_increment'] = part.qty_increment[dist_s]
+                    dico[part.fields.get('manf#')][dist_s]['qty'] = part.qty_avail[dist_s]
+                    if 'part.datasheet' in locals():
+                        dico[part.fields.get('manf#')][dist_s]['datasheet'] = part.datasheet
+            
+        #One the dictionary is completed, call json dump file
+        #using the json method.
+        json_obj = json.dumps(dico, indent = 4)   
+        with open(os.path.join(out_filename + '.json'), 'w') as fic:
+            fic.write(json.dumps(dico, indent = 4))
+    
     # Print component groups for debugging purposes.
     if logger.isEnabledFor(DEBUG_DETAILED):
         for part in parts:

@@ -89,6 +89,9 @@ def main():
                         type=str,
                         metavar='FILE.XLSX',
                         help='Generated cost spreadsheet.')
+    parser.add_argument('-j', '--json',
+                        action='store_true',
+                        help='Enable json export along with the xlsx output file.')
     parser.add_argument('-f', '--fields',
                         nargs='+',
                         type=str,
@@ -308,7 +311,7 @@ def main():
         user_fields=args.fields, ignore_fields=args.ignore_fields,
         group_fields=args.group_fields, translate_fields=args.translate_fields,
         variant=args.variant,
-        dist_list=dist_list, currency=args.currency)
+        dist_list=dist_list, currency=args.currency, export_json=args.json)
     #except Exception as e:
     #    sys.exit(e)
 
