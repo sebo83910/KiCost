@@ -278,7 +278,7 @@ def kicost(in_file, eda_name, out_filename,
             dico[part.fields.get('manf#')]= copy.deepcopy(dists_list)
             for dist_s in dists_list.keys():
                 if dist_s in dist_list:
-                    print ("exist: ", dist_s)
+                    #print ("exist: ", dist_s)
                     dico[part.fields.get('manf#')][dist_s]['url'] = part.url[dist_s]
                     dico[part.fields.get('manf#')][dist_s]['part_num'] = part.part_num[dist_s]
                     dico[part.fields.get('manf#')][dist_s]['moq'] = part.moq[dist_s]
