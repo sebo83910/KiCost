@@ -262,6 +262,7 @@ def kicost(in_file, eda_name, out_filename,
 
     #This section exports some of the parts elements into a JSON file.
     if export_json:
+        print("perform json export")
         elements = {'url': {}, 'datasheet': {}, 'currency': {}, 'qty': {}, 'part_num': {}, 'moq': {}, 'price_tiers': {}, 'qty_increment': {}}
         dists_list = {
             'digikey': elements.copy(),
@@ -294,6 +295,7 @@ def kicost(in_file, eda_name, out_filename,
             
         #One the dictionary is completed, call json dump file
         #using the json method.
+        print(out_filename)
         json_obj = json.dumps(dico, indent = 4)   
         with open(os.path.join(out_filename + '.json'), 'w') as fic:
             fic.write(json.dumps(dico, indent = 4))
