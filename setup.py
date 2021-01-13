@@ -112,7 +112,7 @@ setup(
     url='https://xesscorp.github.io/KiCost',
     project_urls={
         'Doc': 'https://xesscorp.github.io/KiCost',
-        'Git': 'https://github.com/xesscorp/KiCost',
+        'Git': 'https://github.com/sebo83910/KiCost',
     },
     packages=setuptools.find_packages(),
     entry_points={'console_scripts':['kicost = kicost.__main__:main']},
