@@ -45,6 +45,9 @@ import pprint
 import tqdm
 import json
 import copy
+from babel import numbers # For currency presentation.
+from currency_converter import CurrencyConverter
+currency_convert = CurrencyConverter().convert
 
 # Stops UnicodeDecodeError exceptions.
 try:
@@ -119,6 +122,7 @@ def kicost(in_file, eda_name, out_filename,
             else:
                 field_name_translations.pop(translate_fields[c].lower(), None)
 
+    print("currency: ", currency)
     # Check the integrity of the user personal fields, this should not
     # be any of the reserved fields.
     # This is checked after the translation `dict` is complete, so an
@@ -262,6 +266,12 @@ def kicost(in_file, eda_name, out_filename,
 
     #This section exports some of the parts elements into a JSON file.
     if export_json:
+        CURRENCY_ALPHA3 = currency.strip().upper()
+        CURRENCY_SYMBOL = numbers.get_currency_symbol(
+            CURRENCY_ALPHA3, locale=DEFAULT_LANGUAGE
+            )
+        CURRENCY_FORMAT = CURRENCY_SYMBOL + '#,##0.00'
+        
         print("perform json export")
         elements = {'url': {}, 'datasheet': {}, 'currency': {}, 'qty': {}, 'part_num': {}, 'moq': {}, 'price_tiers': {}, 'qty_increment': {}}
         dists_list = {
@@ -273,18 +283,25 @@ def kicost(in_file, eda_name, out_filename,
 
         # 
         dico = dict()
+        prices = dict()
     
         for part in parts:
             #Gather information under each part available:
             dico[part.fields.get('manf#')]= copy.deepcopy(dists_list)
             for dist_s in dists_list.keys():
                 if dist_s in dist_list:
-                    #print ("exist: ", dist_s)
                     dico[part.fields.get('manf#')][dist_s]['url'] = part.url[dist_s]
                     dico[part.fields.get('manf#')][dist_s]['part_num'] = part.part_num[dist_s]
                     dico[part.fields.get('manf#')][dist_s]['moq'] = part.moq[dist_s]
-                    dico[part.fields.get('manf#')][dist_s]['currency'] = part.currency[dist_s]
+                    #print('Getting distributor currency convertion rate {} to {}...', part.currency[dist_s], CURRENCY_ALPHA3)
                     dico[part.fields.get('manf#')][dist_s]['price_tiers'] = part.price_tiers[dist_s]
+
+                    for k, v in dico[part.fields.get('manf#')][dist_s]['price_tiers'].items():
+                        print(k)
+                        print(v)
+                        dico[part.fields.get('manf#')][dist_s]['price_tiers'][k] = round(currency_convert(float(v), part.currency[dist_s], CURRENCY_ALPHA3),3)
+                    #dico[part.fields.get('manf#')][dist_s]['currency'] = part.currency[dist_s]
+                    dico[part.fields.get('manf#')][dist_s]['currency'] = CURRENCY_ALPHA3
                     if part.qty_increment[dist_s] == float("inf"):
                         dico[part.fields.get('manf#')][dist_s]['qty_increment'] = "null"
                     else:
