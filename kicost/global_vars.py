@@ -48,6 +48,8 @@ DEFAULT_LANGUAGE = 'en_US' # Default language used by GUI and spreadsheet
                            # generation and number presentation.
 DEFAULT_CURRENCY = 'USD' # Default currency assigned.
 
+USE_FULL_JSON = False
+
 class PartHtmlError(Exception):
     '''Exception for failed retrieval of an HTML parse tree for a part.'''
     pass

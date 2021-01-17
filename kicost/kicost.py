@@ -273,7 +273,21 @@ def kicost(in_file, eda_name, out_filename,
         CURRENCY_FORMAT = CURRENCY_SYMBOL + '#,##0.00'
         
         print("perform json export")
-        elements = {'url': {}, 'datasheet': {}, 'currency': {}, 'qty': {}, 'part_num': {}, 'moq': {}, 'price_tiers': {}, 'qty_increment': {}}
+        elements = {
+            'conversion?': {}, 
+            'taux': {}, 
+            'currency': {}, 
+            'qty_dispo': {}, 
+            'moq': {}, 
+            'price_tiers': {}, 
+            'qty_increment': {}
+        }
+        if USE_FULL_JSON:
+            elements.update = {
+                'url': {}, 
+                'datasheet': {}, 
+                'part_num': {}, 
+            }    
         dists_list = {
             'digikey': elements.copy(),
             'farnell': elements.copy(),
@@ -284,32 +298,46 @@ def kicost(in_file, eda_name, out_filename,
         # 
         dico = dict()
         prices = dict()
-    
+
+        
+
         for part in parts:
             #Gather information under each part available:
             dico[part.fields.get('manf#')]= copy.deepcopy(dists_list)
             for dist_s in dists_list.keys():
                 if dist_s in dist_list:
+                    if USE_FULL_JSON:
+                        dico[part.fields.get('manf#')][dist_s]['part_num'] = part.part_num[dist_s]
+                        if 'part.datasheet' in locals():
+                            dico[part.fields.get('manf#')][dist_s]['datasheet'] = part.datasheet
+                    
                     dico[part.fields.get('manf#')][dist_s]['url'] = part.url[dist_s]
-                    dico[part.fields.get('manf#')][dist_s]['part_num'] = part.part_num[dist_s]
                     dico[part.fields.get('manf#')][dist_s]['moq'] = part.moq[dist_s]
                     #print('Getting distributor currency convertion rate {} to {}...', part.currency[dist_s], CURRENCY_ALPHA3)
                     dico[part.fields.get('manf#')][dist_s]['price_tiers'] = part.price_tiers[dist_s]
 
                     for k, v in dico[part.fields.get('manf#')][dist_s]['price_tiers'].items():
-                        print(k)
-                        print(v)
                         dico[part.fields.get('manf#')][dist_s]['price_tiers'][k] = round(currency_convert(float(v), part.currency[dist_s], CURRENCY_ALPHA3),3)
                     #dico[part.fields.get('manf#')][dist_s]['currency'] = part.currency[dist_s]
+                    if dico[part.fields.get('manf#')][dist_s]['currency'] != part.currency[dist_s]:
+                        dico[part.fields.get('manf#')][dist_s]['conversion?']= "oui"
+                        dico[part.fields.get('manf#')][dist_s]['taux']= "1 USD = " + str(round(currency_convert(float(1.0), part.currency[dist_s], CURRENCY_ALPHA3),3))+ " EUR"
+                    else:
+                        dico[part.fields.get('manf#')][dist_s]['conversion?']= "non"
                     dico[part.fields.get('manf#')][dist_s]['currency'] = CURRENCY_ALPHA3
                     if part.qty_increment[dist_s] == float("inf"):
                         dico[part.fields.get('manf#')][dist_s]['qty_increment'] = "null"
                     else:
                         dico[part.fields.get('manf#')][dist_s]['qty_increment'] = part.qty_increment[dist_s]
-                    dico[part.fields.get('manf#')][dist_s]['qty'] = part.qty_avail[dist_s]
-                    if 'part.datasheet' in locals():
-                        dico[part.fields.get('manf#')][dist_s]['datasheet'] = part.datasheet
-            
+                    dico[part.fields.get('manf#')][dist_s]['qty_dispo'] = part.qty_avail[dist_s]
+        
+        for part in parts:
+            for dist_s in dists_list.keys():
+                if  dist_s not in dist_list:
+                    print("delete:", dist_s)
+                    del dico[part.fields.get('manf#')][dist_s]
+                #print("delete:", dist_s)
+
         #One the dictionary is completed, call json dump file
         #using the json method.
         print(out_filename)
